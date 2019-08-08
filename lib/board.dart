@@ -33,14 +33,6 @@ class Board{
     for (int i = 0; i < rowCount; i++) {
       for (int j = 0; j < columnCount; j++) {
 
-        // for(int x=-1; x<2; ++x){
-        //   for(int y=-1; y<2; ++y){
-        //     if((x+y)!=0){
-        //       board[i][j].bombsAround+=_getBomb(i+x, j+y);
-        //     }
-        //   }
-        // }
-
         board[i][j].bombsAround+=_getBomb(i-1, j-1);
         board[i][j].bombsAround+=_getBomb(i-1, j);
         board[i][j].bombsAround+=_getBomb(i-1, j+1);
@@ -57,11 +49,16 @@ class Board{
 
   }
 
-  bool isInBoard(int x, int y) =>
-        x >= 0 && x < columnCount && y >= 0 && y < rowCount;
+  bool isInBoard(int x, int y)  {
+    return x >= 0 && x < rowCount && y >= 0 && y < columnCount;
+  }
 
-  int _getBomb(int x, int y) =>
-    isInBoard(x, y) && board[x][y].hasBomb ? 1 : 0;  
+
+  int _getBomb(int x, int y) {
+    if(isInBoard(x, y)) return board[x][y].hasBomb ? 1 : 0;
+    else return 0;
+  }
+
 
   void openAllBombs(){
     for (int i = 0; i < rowCount; i++) {

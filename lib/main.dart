@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'SaperGame.dart';
+import 'saperGame.dart';
 
 void main() {
   runApp(MyApp());

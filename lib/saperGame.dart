@@ -1,5 +1,28 @@
 import 'package:flutter/material.dart';
 import 'board.dart';
+import 'dart:async';
+
+class Time{
+  int hours;
+  int minutes;
+  int milliseconds;
+
+  Time({this.hours=0, this.minutes=0, this.milliseconds=0});
+
+  @override
+  String toString(){
+    String time="";
+    if(hours!=0)  time+=hours.toString();
+    if(minutes!=0)  time+=minutes.toString();
+    time+=milliseconds.toString();
+
+    return time;
+  }
+
+  void countTime(int millisecond){
+  }
+
+}
 
 class SaperGame extends StatefulWidget {
   @override
@@ -10,6 +33,24 @@ class _SaperGameState extends State<SaperGame> {
   
   Board myBoard;
   int squaresLeft;
+  bool firstTap;
+
+  Timer _timer;
+  Time myTime = new Time();
+  int _start = 0;
+
+  void startTimer() {
+    const oneMil = const Duration(seconds: 1);
+    _timer = new Timer.periodic(
+      oneMil,
+          (Timer timer) => setState(
+            () {
+            _start = _start + 1;
+//            myTime.countTime(_start);
+        },
+      ),
+    );
+  }
 
   @override
     void initState() {
@@ -23,12 +64,15 @@ class _SaperGameState extends State<SaperGame> {
       body: ListView(
         children: <Widget>[
           Container(
-            color: Colors.pink,
+//            color: Colors.pink,
             height: 60.0,
             width: double.infinity,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
+                Text('${myBoard.bombCount}',
+                    textAlign: TextAlign.center,
+                    style: new TextStyle(color: Colors.black, fontSize: 25.0, )),
                 InkWell(
                   onTap: () {
                     _initGame();
@@ -39,45 +83,75 @@ class _SaperGameState extends State<SaperGame> {
                       color: Colors.black,
                       size: 40.0,
                     ),
-                    backgroundColor: Colors.yellowAccent,
+                    backgroundColor: hexToColor("#F2CC8C"),
                   ),
-                )
+                ),
+                Text("$_start", textAlign: TextAlign.center,style: new TextStyle(color: Colors.black, fontSize: 25.0, )),
               ],
             ),
           ),
           GridView.builder(
             shrinkWrap: true,
+            itemCount: (myBoard.rowCount * myBoard.columnCount),
             physics: NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: myBoard.columnCount,
             ),
             itemBuilder: (context, position) {
-              // Get row and column number of square
               int rowNumber = (position / myBoard.columnCount).floor();
               int columnNumber = (position % myBoard.columnCount);
               
               Text text;
-
-              if  (myBoard.board[rowNumber][columnNumber].isOpened == true) {
-                if (myBoard.board[rowNumber][columnNumber].hasBomb) {
-                  text = new Text('x', textAlign: TextAlign.center,style: new TextStyle(color: hexToColor("#F2A03D"), fontSize: 25.0, ));
+              Container container;
+              Color backgroundColor = hexToColor("#F2CC8C");
+              String digit;
+              Square currentSquare = myBoard.board[rowNumber][columnNumber];
+              if (currentSquare.isOpened == true) {
+                if (currentSquare.hasBomb) {
+                  digit = 'x';
                 } else {
-                  text = new Text((myBoard.board[rowNumber][columnNumber].bombsAround).toString(),textAlign: TextAlign.center, style: new TextStyle(color: hexToColor("#F2A03D"), fontSize: 25.0));
+                  if(currentSquare.bombsAround==0){
+                    digit = ' ';
+                    backgroundColor = hexToColor("#F1E6C1");
+                  }else{
+                    digit = (currentSquare.bombsAround).toString();
+                  }
                 }
               }else{
-                text = new Text('-',textAlign: TextAlign.center, style: new TextStyle(color: hexToColor("#F2A03D"), fontSize: 25.0));
+                digit = ' ';
               }
+              text = new Text(
+                  digit,
+                  textAlign: TextAlign.center,
+                  style: new TextStyle(
+                    color: Colors.black,
+                    fontSize: 16.0,
+                  )
+              );
+
+              container = new Container(
+                margin: EdgeInsets.all(0.5),
+                decoration: new BoxDecoration(
+                    color: backgroundColor,
+                    borderRadius: BorderRadius.all(Radius.circular(10))
+                ),
+                child: text,
+              );
 
               return InkWell(
-                // Opens square
                 onTap: () {
-                  if (myBoard.board[rowNumber][columnNumber].hasBomb) {
+                  if(squaresLeft==myBoard.columnCount*myBoard.rowCount){
                     setState(() {
-                      myBoard.openAllBombs();  
+                      startTimer();
+                    });
+                  }
+                  if (currentSquare.hasBomb) {
+                    setState(() {
+                      myBoard.openAllBombs();
                       _handleGameOver();
                     });
                   }
-                  if (myBoard.board[rowNumber][columnNumber].bombsAround == 0) {
+                  if (currentSquare.bombsAround == 0) {
                     _handleTap(rowNumber, columnNumber);
                   } else {
                     setState(() {
@@ -88,15 +162,12 @@ class _SaperGameState extends State<SaperGame> {
                   if(squaresLeft <= myBoard.bombCount) {
                     _handleWin();
                   }
+
                 },
                 splashColor: Colors.red,
-                child: Container(
-                  color: Colors.green,
-                  child: text,
-                ),
+                child: container
               );
             },
-            itemCount: (myBoard.rowCount * myBoard.columnCount),
           )
         ],
       ),
@@ -104,9 +175,12 @@ class _SaperGameState extends State<SaperGame> {
   }
 
   void _initGame(){
-    myBoard = new Board(10, 10, 10);
+    myBoard = new Board(30, 16, 99);
+    _start=0;
     squaresLeft=myBoard.columnCount*myBoard.rowCount;
-    setState(() {});
+    setState(() {
+      if(_timer!=null)  _timer.cancel();
+    });
   }
 
   void _handleTap(int i, int j) {
@@ -116,36 +190,35 @@ class _SaperGameState extends State<SaperGame> {
       squaresLeft = squaresLeft - 1;
       
       if(myBoard.board[i][j].bombsAround!=0) return;
-      print('i is $i');
-      print('j is $j');
 
-      for(int x=-1; x<2; ++x){
-        for(int y=-1; y<2; ++y){
-          if((x+y)!=0){
-            _handleTap(i+x, j+y);    
-          }
-        }
-      }
-      // _handleTap(i-1, j+1);
-      // _handleTap(i-1, j);
-      // _handleTap(i-1, j-1);
+//      for(int x=-1; x<2; ++x){
+//        for(int y=-1; y<2; ++y){
+//          if((x+y)!=0){
+//            _handleTap(i+x, j+y);
+//          }
+//        }
+//      }
+       _handleTap(i-1, j+1);
+       _handleTap(i-1, j);
+       _handleTap(i-1, j-1);
 
-      // _handleTap(i, j-1);
-      // _handleTap(i, j+1);
+       _handleTap(i, j-1);
+       _handleTap(i, j+1);
 
-      // _handleTap(i+1, j+1);
-      // _handleTap(i+1, j);
-      // _handleTap(i+1, j-1);      
+       _handleTap(i+1, j+1);
+       _handleTap(i+1, j);
+       _handleTap(i+1, j-1);
     
     setState(() {});
   }
 
   void _handleWin() {
+    _timer.cancel();
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Congratulations!"),
+          title: Text("Congratulations! \nYour result is $_start seconds"),
           content: Text("You Win!"),
           actions: <Widget>[
             FlatButton(
@@ -166,12 +239,13 @@ class _SaperGameState extends State<SaperGame> {
     }
 
   void _handleGameOver() {
+    if(_timer!=null)  _timer.cancel();
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: Text("Game Over!"),
-          content: Text("You stepped on a mine!"),
+          content: Text("You stepped on a mine! \nYour result is $_start seconds"),
           actions: <Widget>[
             FlatButton(
               onPressed: () {
