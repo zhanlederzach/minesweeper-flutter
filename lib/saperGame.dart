@@ -25,6 +25,10 @@ class Time{
 }
 
 class SaperGame extends StatefulWidget {
+  SaperGame(this.level) :  super();
+
+  final String level;
+
   @override
   _SaperGameState createState() => _SaperGameState();
 }
@@ -70,6 +74,13 @@ class _SaperGameState extends State<SaperGame> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: <Widget>[
+                RaisedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                color: Colors.transparent,
+                child: Text('<-'),
+                ),
                 Text('${myBoard.bombCount}',
                     textAlign: TextAlign.center,
                     style: new TextStyle(color: Colors.black, fontSize: 25.0, )),
@@ -115,6 +126,7 @@ class _SaperGameState extends State<SaperGame> {
                     backgroundColor = hexToColor("#F1E6C1");
                   }else{
                     digit = (currentSquare.bombsAround).toString();
+                    backgroundColor = hexToColor("#F1E6C1");
                   }
                 }
               }else{
@@ -175,9 +187,27 @@ class _SaperGameState extends State<SaperGame> {
   }
 
   void _initGame(){
-    myBoard = new Board(30, 16, 99);
-    _start=0;
-    squaresLeft=myBoard.columnCount*myBoard.rowCount;
+//    myBoard = new Board(30, 16, 99);
+    int row = 0;
+    int column = 0;
+    int bombCount = 0;
+
+    if(widget.level=='Easy') {
+      row = 10;
+      column = 10;
+      bombCount = 10;
+    }else if(widget.level=='Medium'){
+      row = 20;
+      column = 20;
+      bombCount = 30;
+    } else {
+      row = 30;
+      column = 16;
+      bombCount = 99;
+    }
+    myBoard = new Board(row, column, bombCount);
+    _start = 0;
+    squaresLeft = myBoard.columnCount*myBoard.rowCount;
     setState(() {
       if(_timer!=null)  _timer.cancel();
     });
@@ -236,7 +266,7 @@ class _SaperGameState extends State<SaperGame> {
 
   Color hexToColor(String code) {
       return new Color(int.parse(code.substring(1, 7), radix: 16) + 0xFF000000);
-    }
+  }
 
   void _handleGameOver() {
     if(_timer!=null)  _timer.cancel();
@@ -245,7 +275,7 @@ class _SaperGameState extends State<SaperGame> {
       builder: (context) {
         return AlertDialog(
           title: Text("Game Over!"),
-          content: Text("You stepped on a mine! \nYour result is $_start seconds"),
+          content: Text("You stepped on a mine! Chmownek"),
           actions: <Widget>[
             FlatButton(
               onPressed: () {
